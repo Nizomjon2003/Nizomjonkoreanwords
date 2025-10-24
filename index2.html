@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>So‘zlarni Yodlash</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Poppins", Arial, sans-serif;
+    background: linear-gradient(135deg, #1e3a8a, #0f172a);
+    color: #e5e7eb;
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    background: rgba(30, 41, 59, 0.95);
+    border-right: 1px solid rgba(255,255,255,0.05);
+    padding: 20px;
+    backdrop-filter: blur(8px);
+    transition: transform 0.5s ease, opacity 0.4s ease;
+  }
+  .sidebar h2 {
+    font-size: 20px;
+    text-align: center;
+    color: #93c5fd;
+    margin-bottom: 20px;
+  }
+  .topic {
+    background: rgba(255,255,255,0.05);
+    margin-bottom: 8px;
+    padding: 10px;
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .topic:hover { background: rgba(96,165,250,0.25); }
+  .topic.active { background: rgba(96,165,250,0.4); }
+
+  /* Top controls */
+  .top-controls {
+    position: fixed;
+    top: 14px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 20;
+    padding: 0 20px;
+  }
+
+  .menu-btn {
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: #fff;
+    font-size: 18px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .menu-btn:hover { background: rgba(255,255,255,0.2); }
+
+  .swap-btn {
+    background: rgba(96,165,250,0.2);
+    border: 1px solid #60a5fa;
+    color: #e0f2fe;
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .swap-btn:hover { background: rgba(96,165,250,0.35); transform: translateY(-2px); }
+
+  .hidden { display: none; }
+
+  /* Main */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 20px;
+    padding: 40px 30px;
+    box-shadow: 0 6px 25px rgba(0,0,0,0.3);
+    max-width: 420px;
+    width: 100%;
+    transform: scale(0.9);
+    opacity: 0;
+    animation: fadeIn 0.6s forwards ease-out;
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .word-box {
+    font-size: 36px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    transition: opacity 0.3s ease;
+  }
+
+  .translation {
+    font-size: 24px;
+    color: #a5b4fc;
+    min-height: 35px;
+    transition: opacity 0.3s ease;
+  }
+
+  .buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  button {
+    background: #60a5fa;
+    border: none;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  button:hover { background: #3b82f6; transform: translateY(-2px); }
+
+  footer {
+    position: absolute;
+    bottom: 8px;
+    width: 100%;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 14px;
+  }
+  footer span { color: #93c5fd; }
+
+  /* 📱 Mobile view fix */
+  @media (max-width: 768px) {
+    body { flex-direction: column; overflow: hidden; }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      transform: translateX(-100%);
+      opacity: 0;
+      z-index: 15;
+    }
+    .sidebar.active {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .main { padding-top: 100px; }
+    .word-box { font-size: 28px; }
+    .translation { font-size: 18px; }
+    .top-controls {
+      flex-direction: row;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .menu-btn, .swap-btn {
+      width: auto;
+      font-size: 15px;
+      padding: 10px;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <div class="top-controls">
+    <button class="menu-btn" id="menuBtn">📚 Mavzular</button>
+    <button class="swap-btn" id="swapModeBtn">🔄 O‘zbek → Koreys</button>
+  </div>
+
+  <div class="sidebar" id="sidebar">
+    <h2>Mavzular</h2>
+    <div id="topicList"></div>
+  </div>
+
+  <div class="main">
+    <div class="card">
+      <div id="wordBox" class="word-box">Mavzuni tanlang</div>
+      <div id="translationBox" class="translation"></div>
+      <div class="buttons">
+        <button id="changeBtn" disabled>O‘zgartir</button>
+        <button id="showTransBtn" disabled>Tarjimani ko‘rsat</button>
+      </div>
+    </div>
+    <footer>
+      © 2025 <span>Jaloldinov Nizomjon</span> — Namangan Davlat Texnik Universiteti magistranti | AI Developer
+    </footer>
+  </div>
+
+<script>
+  const sidebar = document.getElementById("sidebar");
+  const topicList = document.getElementById("topicList");
+  const wordBox = document.getElementById("wordBox");
+  const translationBox = document.getElementById("translationBox");
+  const changeBtn = document.getElementById("changeBtn");
+  const showTransBtn = document.getElementById("showTransBtn");
+  const menuBtn = document.getElementById("menuBtn");
+  const swapModeBtn = document.getElementById("swapModeBtn");
+
+  let currentTopic = null;
+  let currentWord = null;
+  let currentTranslation = null;
+  let reverseMode = false;
+
+  const topics = {
+ "1-dars": [
+        ["dars", "과"],
+        ["nima", "무엇"],
+        ["stol", "책상"],
+        ["stul", "의자"],
+        ["grammatika", "문법"],
+        ["kitob", "책"],
+        ["deraza", "창문"],
+        ["ruchka", "펜"],
+        ["eshik", "문"],
+        ["qalam", "연필"]
+    ],
+    "2-dars": [
+        ["soat", "시계"],
+        ["ha", "네"],
+        ["yo‘q", "아니요"],
+        ["tufli", "구두"],
+        ["krasovka", "운동화"],
+        ["gul", "꽃"],
+        ["daftar", "공책"],
+        ["daraxt", "나무"],
+        ["sumka", "가방"]
+    ],
+    "3-dars": [
+        ["mening", "제"],
+        ["ism", "이름"],
+        ["Siz bilan tanishganimdan xursandman", "반갑다"],
+        ["janob/xonim", "씨"],
+        ["men", "저"],
+        ["Angliya", "영국"],
+        ["inson", "사람"],
+        ["Koreya", "한국"],
+        ["Koreys tili", "한국어"],
+        ["taxsil olmoq / study", "공부하다"],
+        ["Guruchli ovqat", "밥"],
+        ["yemoq", "먹다"],
+        ["Yaponiya", "일본"],
+        ["Yapon tili", "일본어"],
+        ["Xitoy", "중국"],
+        ["Xitoy tili", "중국어"],
+        ["Ingliz tili", "영어"],
+        ["AQSH", "미국"],
+        ["ustoz", "선생님"]
+    ],
+    "4-dars": [
+        ["bu yer", "여기"],
+        ["qayer", "어디"],
+        ["Seul universiteti", "서울대학교"],
+        ["biz", "우리"],
+        ["chet el", "외국"],
+        ["talaba", "학생"],
+        ["o‘rganmoq / learn", "배우다"],
+        ["qilmoq", "하다 / 하시다"],
+        ["men", "나"],
+        ["o‘rgatmoq", "가르치다"],
+        ["Seul", "서울"],
+        ["sinfxona", "교실"],
+        ["universitet", "대학교"],
+        ["maktab", "학교"],
+        ["uy", "집"]
+    ],
+    "5-dars": [
+        ["restoran", "식당"],
+        ["bormoq / go", "가다 / 가시다"],
+        ["kutubxona", "도서관"],
+        ["ham", "~도"],
+        ["birga", "같이"],
+        ["kelmoq", "오다"],
+        ["yolg‘iz", "혼자"],
+        ["bozor", "시장"],
+        ["qahvaxona", "다방"],
+        ["javob bermoq", "대답하다"]
+    ],
+    "6-dars": [
+        ["bugun", "오늘"],
+        ["ob-havo", "날씨"],
+        ["qanday", "어떻다"],
+        ["yaxshi", "좋다"],
+        ["issiq", "덥다"],
+        ["sovuq", "춥다"],
+        ["iliq", "따듯하다"],
+        ["shu kunlarda", "요즘"],
+        ["yomon", "나쁘다"],
+        ["yomg‘ir", "비"],
+        ["qor", "눈"],
+        ["to‘g‘ri", "맞다"],
+        ["rasm", "그림"],
+        ["tanlamoq", "고르다"]
+    ],
+    "7-dars": [
+        ["qaysi", "무슨"],
+        ["hafta kuni", "요일"],
+        ["ertaga", "내일"],
+        ["va qo‘shimchasi", "와 / 과"],
+        ["dam olish kuni", "주말"],
+        ["dam olmoq", "쉬다"],
+        ["televizor", "텔레비전"],
+        ["ko‘rmoq", "보다"],
+        ["atirgul", "장미"],
+        ["bog‘", "공원"],
+        ["do‘st", "친구"],
+        ["kino", "영화"],
+        ["blaknot", "수첩"],
+        ["yozmoq", "쓰다"],
+        ["bog‘lamoq", "연결하다"],
+        ["noto‘g‘ri", "틀리다"]
+    ],
+    "8-dars": [
+        ["mening", "내"],
+        ["xona", "방"],
+        ["qavat, etaj", "층"],
+        ["bor", "있다"],
+        ["yo‘q", "없다"],
+        ["yapman (hozirgi zamon qo‘shimchasi)", "-아요 / -어요"],
+        ["devon", "침대"],
+        ["yonida", "옆"],
+        ["muzlatkich", "냉장고"],
+        ["tagida, ostida", "아래"],
+        ["pastki qavat", "아래층"],
+        ["shim", "바지"],
+        ["ustida", "위"],
+        ["nechanchi", "몇"],
+        ["ishlamoq", "일하다"],
+        ["oldi", "앞"],
+        ["shlyapa", "모자"]
+    ],
+    "9-dars": [
+        ["kecha", "어제"],
+        ["shahar markazi", "시내"],
+        ["uchrashmoq", "만나다"],
+        ["va", "그리고"],
+        ["choy", "차"],
+        ["ichmoq", "마시다"],
+        ["o‘tgan zamon qo‘shimchasi", "-었 / -았"],
+        ["teatr", "극장"],
+        ["xat", "편지"],
+        ["musiqa", "음악"],
+        ["juda", "아주"],
+        ["o‘qish, o‘rganish", "공부"],
+        ["kofe", "커피"],
+        ["suv", "물"],
+        ["qiziqarli", "재미있다"],
+        ["mashq qilmoq", "운동하다"],
+        ["sharbat", "주스"]
+    ],
+    "10-dars": [
+        ["Fransiya", "프랑스"],
+        ["qachon", "언제"],
+        ["oy", "월"],
+        ["kun", "일"],
+        ["lekin (inkor qo‘shimchasi)", "-지만"],
+        ["qiyin", "어렵다"],
+        ["oson", "쉽다"],
+        ["achchiq", "맵다"],
+        ["qiziqarsiz", "재미없다"],
+        ["bir necha kun", "며칠"],
+        ["iyun", "유월"],
+        ["oktabr", "시월"],
+        ["Avstraliya", "호주"],
+        ["Chejudo (joy nomi)", "제주도"]
+    ],
+    "hafta kunlari": [
+        ["dushanba", "월요일"],
+        ["seshanba", "화요일"],
+        ["chorshanba", "수요일"],
+        ["payshanba", "목요일"],
+        ["juma", "금요일"],
+        ["shanba", "토요일"],
+        ["yakshanba", "일요일"]
+    ],
+    "son": [
+        ["1", "일"],
+        ["2", "이"],
+        ["3", "삼"],
+        ["4", "사"],
+        ["5", "오"],
+        ["6", "육"],
+        ["7", "칠"],
+        ["8", "팔"],
+        ["9", "구"],
+        ["10", "십"]
+    ]
+  };
+
+  // Mavzularni chiqarish
+  for (let topic in topics) {
+    const div = document.createElement("div");
+    div.className = "topic";
+    div.textContent = topic;
+    div.onclick = () => selectTopic(topic, div);
+    topicList.appendChild(div);
+  }
+
+  menuBtn.onclick = () => {
+    sidebar.classList.toggle("active");
+    swapModeBtn.classList.toggle("hidden"); // 📱 Mavzular ochilganda yashir
+  };
+
+  swapModeBtn.onclick = () => {
+    reverseMode = !reverseMode;
+    swapModeBtn.textContent = reverseMode ? "🔁 Koreys → O‘zbek" : "🔄 O‘zbek → Koreys";
+    if (currentTopic) showRandomWord();
+  };
+
+  function selectTopic(topic, element) {
+    document.querySelectorAll(".topic").forEach(el => el.classList.remove("active"));
+    element.classList.add("active");
+    currentTopic = topic;
+    changeBtn.disabled = false;
+    showTransBtn.disabled = false;
+    showRandomWord();
+    sidebar.classList.remove("active");
+    swapModeBtn.classList.remove("hidden"); // ✅ Dars tanlanganda yana chiqadi
+  }
+
+  function showRandomWord() {
+    const list = topics[currentTopic];
+    const newItem = list[Math.floor(Math.random() * list.length)];
+    if (reverseMode) {
+      currentWord = newItem[1];
+      currentTranslation = newItem[0];
+    } else {
+      currentWord = newItem[0];
+      currentTranslation = newItem[1];
+    }
+    wordBox.style.opacity = 0;
+    translationBox.style.opacity = 0;
+    setTimeout(() => {
+      wordBox.textContent = currentWord;
+      translationBox.textContent = "";
+      wordBox.style.opacity = 1;
+    }, 200);
+  }
+
+  changeBtn.onclick = showRandomWord;
+
+  showTransBtn.onclick = () => {
+    translationBox.style.opacity = 0;
+    setTimeout(() => {
+      translationBox.innerHTML = `${currentWord} → <strong>${currentTranslation}</strong>`;
+      translationBox.style.opacity = 1;
+    }, 200);
+  };
+</script>
+</body>
+</html>
